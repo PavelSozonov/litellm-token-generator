@@ -14,11 +14,11 @@ import uuid
 from datetime import datetime
 
 import httpx
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, HTTPException, Depends
 from fastapi.middleware.cors import CORSMiddleware
 from ldap3 import ALL, SUBTREE, Connection, Server
 from pydantic import BaseModel
-from sqlalchemy import Column, DateTime, String, DDL, event, create_engine, select
+from sqlalchemy import Column, DateTime, String, DDL, event, create_engine, select, text
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import DeclarativeBase, Session
 
@@ -55,14 +55,13 @@ class TokenRow(Base):
     __tablename__ = "issued_tokens"
 
     uuid = Column(String, primary_key=True)
-    username = Column(String, nullable=False, unique=True)  # <= UNIQUE
+    username = Column(String, nullable=False, unique=True)
     email = Column(String, nullable=False)
     department = Column(String, nullable=False, index=True)
     token = Column(String, nullable=False)
     created_at = Column(DateTime, nullable=False)
 
 
-# ──────────────────────────────────────────────────────────────────────────────
 # fire a CREATE INDEX IF NOT EXISTS after the table is created
 event.listen(
     TokenRow.__table__,
@@ -73,10 +72,9 @@ event.listen(
     )
 )
 
-
 engine = create_engine(DB_TOKEN_URL, pool_pre_ping=True)
 
-# ────────────────  FastAPI wiring  ────────────────
+# ────────────────  FastAPI wiring  ──────────────
 app = FastAPI(title="Token Generator")
 
 
@@ -91,11 +89,9 @@ class AuthResponse(BaseModel):
     department: str
 
 # ─────── CORS ───────
-# read an env var (set this in your docker-compose.dev.yml or on your host)
 APP_ENV = os.getenv("APP_ENV", "production").lower()
 
 if APP_ENV == "development":
-    # allow only your React dev server
     app.add_middleware(
         CORSMiddleware,
         allow_origins=["http://localhost:3000", "http://localhost:3001"],
@@ -103,6 +99,53 @@ if APP_ENV == "development":
         allow_methods=["*"],
         allow_headers=["*"],
     )
+
+# ───────────────  Liveness & Readiness  ─────────────
+
+def check_db():
+    try:
+        with engine.connect() as conn:
+            conn.execute(text("SELECT 1"))
+    except Exception as e:
+        raise HTTPException(status_code=503, detail=f"Database unavailable: {e}")
+    return True
+
+def check_litellm():
+    try:
+        resp = httpx.get(
+            f"{LITELLM_BASE_URL}/team/info",
+            headers={"Authorization": f"Bearer {LITELLM_MASTER_KEY}"},
+            params={"team_id": TEAM_ID},
+            timeout=2,
+        )
+    except Exception as e:
+        raise HTTPException(status_code=503, detail=f"LiteLLM unreachable: {e}")
+    if resp.status_code != 200:
+        raise HTTPException(status_code=503, detail=f"LiteLLM returned {resp.status_code}")
+    return True
+
+@app.get("/health", summary="Basic health")
+async def health_root() -> dict:
+    return {"status": "ok"}
+
+@app.get("/health/live", summary="Liveness probe")
+async def liveness() -> dict:
+    """
+    Always returns 200 if the service process is up.
+    """
+    return {"status": "alive"}
+
+@app.get(
+    "/health/ready",
+    summary="Readiness probe",
+    dependencies=[Depends(check_db), Depends(check_litellm)],
+    responses={503: {"description": "Service Unavailable"}},
+)
+async def readiness() -> dict:
+    """
+    Returns 200 only if all dependency checks pass.
+    """
+    return {"status": "ready"}
 
 # ────────────────────  LDAP  ──────────────────────
 def get_ldap_connection() -> Connection:
@@ -282,8 +325,3 @@ def issue_token(req: AuthRequest):
 
     logger.info("Issued token for %s", user.sAMAccountName)
     return {"token": token_key, "user": user.dict()}
-
-
-@app.get("/health")
-def health():
-    return {"status": "ok"}

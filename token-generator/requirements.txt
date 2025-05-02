@@ -7,3 +7,4 @@ python-ldap
 httpx
 SQLAlchemy
 psycopg2-binary
+fastapi-health>=0.2.0
