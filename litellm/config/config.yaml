@@ -1,0 +1,22 @@
+model_list:
+  - model_name: gpt-3.5-turbo
+    litellm_params:
+      model: gpt-3.5-turbo
+      api_key: "dummy-key"
+  - model_name: GenAI/model1
+    litellm_params:
+      model: gpt-3.5-turbo
+      api_key: "dummy-key"
+  - model_name: GenAI/model2
+    litellm_params:
+      model: gpt-3.5-turbo
+      api_key: "dummy-key"
+
+general_settings:
+  master_key: "sk-1234"
+  disable_user_auth: false
+  database_url: "postgresql://admin:pass@db-litellm:5432/litellm_db"
+  save_models_to_db: true
+
+host: 0.0.0.0
+port: 4000 

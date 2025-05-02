@@ -1,0 +1,43 @@
+# Create the organizational unit
+dn: ou=users,dc=example,dc=com
+objectClass: organizationalUnit
+ou: users
+
+# user1
+dn: uid=user1,ou=users,dc=example,dc=com
+objectClass: inetOrgPerson
+objectClass: organizationalPerson
+objectClass: person
+objectClass: top
+uid: user1
+sn: One
+cn: User One
+mail: UserName1@example.com
+departmentNumber: dep1
+userPassword: pass1
+
+# user2
+dn: uid=user2,ou=users,dc=example,dc=com
+objectClass: inetOrgPerson
+objectClass: organizationalPerson
+objectClass: person
+objectClass: top
+uid: user2
+sn: Two
+cn: User Two
+mail: UserName2@example.com
+departmentNumber: dep2
+userPassword: pass2
+
+# user3
+dn: uid=user3,ou=users,dc=example,dc=com
+objectClass: inetOrgPerson
+objectClass: organizationalPerson
+objectClass: person
+objectClass: top
+uid: user2
+sn: Three
+cn: User Three
+mail: UserName3@example.com
+departmentNumber: dep1
+userPassword: pass3

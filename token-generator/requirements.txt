@@ -1,0 +1,9 @@
+fastapi
+uvicorn[standard]
+ldap3
+sqlalchemy
+jwt
+python-ldap
+httpx
+SQLAlchemy
+psycopg2-binary

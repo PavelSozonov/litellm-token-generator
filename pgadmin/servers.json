@@ -1,0 +1,26 @@
+{
+  "Servers": {
+    "1": {
+      "Name": "Token DB",
+      "Group": "Databases",
+      "Host": "db-token",
+      "Port": 5432,
+      "MaintenanceDB": "token_db",
+      "Username": "admin",
+      "Password": "pass",
+      "SSLMode": "prefer",
+      "SavePassword": true
+    },
+    "2": {
+      "Name": "LiteLLM DB",
+      "Group": "Databases",
+      "Host": "db-litellm",
+      "Port": 5432,
+      "MaintenanceDB": "litellm_db",
+      "Username": "admin",
+      "Password": "pass",
+      "SSLMode": "prefer",
+      "SavePassword": true
+    }
+  }
+}
