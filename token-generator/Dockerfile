@@ -1,5 +1,7 @@
 # ──────────── builder stage ────────────
 FROM python:3.13-slim AS builder
+
+ARG DEBIAN_FRONTEND=noninteractive
 WORKDIR /build
 
 RUN apt-get update \
@@ -8,7 +10,7 @@ RUN apt-get update \
  && rm -rf /var/lib/apt/lists/*
 
 COPY requirements.txt .
-RUN pip wheel --no-cache-dir --wheel-dir /wheels -r requirements.txt
+RUN pip install --upgrade pip && pip wheel --no-cache-dir --wheel-dir /wheels -r requirements.txt
 
 # Vendor into ./vendor (no console scripts!)
 RUN pip install \
@@ -27,6 +29,7 @@ COPY --from=builder /usr/bin/tini /usr/bin/tini
 COPY --from=builder /build/vendor /app/vendor
 ENV PYTHONPATH=/app/vendor
 
+USER nonroot
 COPY . .
 
 ENTRYPOINT ["/usr/bin/tini", "--"]
