@@ -143,11 +143,22 @@ services:
       token-generator:
         condition: service_healthy
     healthcheck:
-      test: [ "CMD-SHELL", "curl -f http://localhost:3000 || exit 1" ]
-      start_period: 30s
-      interval: 10s
-      timeout: 10s
-      retries: 10
+      test:
+        - CMD
+        - node
+        - -e
+        - >
+          const http = require('http');
+          http
+            .get('http://localhost:3000', res => {
+              process.exit(res.statusCode === 200 ? 0 : 1);
+            })
+            .on('error', () => process.exit(1));
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 5s
+    restart: on-failure
 
   # ────────────────────────── pgAdmin ──────────────────────────
   pgadmin:
