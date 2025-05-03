@@ -1,31 +1,32 @@
-# ─── Stage 1: Builder (node:23-alpine) ───────────────────────
-FROM node:23-alpine AS builder
+# ─── Stage 1: Builder (glibc-based) ─────────────────────────
+FROM node:23-slim AS builder
+
+ARG DEBIAN_FRONTEND=noninteractive
 WORKDIR /app
 
-# 1. Download a statically linked tini
-RUN apk add --no-cache curl \
- && curl -SL https://github.com/krallin/tini/releases/download/v0.19.0/tini-static \
-     -o /tini \
- && chmod +x /tini
+# Install build deps + tini (glibc-linked)
+RUN apt-get update \
+ && apt-get install -y --no-install-recommends \
+      curl tini \
+ && rm -rf /var/lib/apt/lists/*
 
-# 2. Install all dependencies for build
+# Install and build your frontend
 COPY package.json package-lock.json ./
 RUN npm ci --ignore-scripts --no-fund
-
-# 3. Build and prune dev dependencies
 COPY . .
 RUN npm run build \
  && npm prune --production
 
 # ─── Stage 2: Runtime (Chainguard Node) ──────────────────────
 FROM cgr.dev/chainguard/node AS runtime
+
 WORKDIR /app
 
-# 1. Copy the static tini and the built app
-COPY --from=builder /tini /tini
+# Copy the glibc-linked tini and the built app
+COPY --from=builder /usr/bin/tini /usr/bin/tini
 COPY --from=builder /app /app
 
 # 2. Expose and launch under tini
 EXPOSE 3000
-ENTRYPOINT ["/tini", "--"]
+ENTRYPOINT ["/usr/bin/tini", "--"]
 CMD ["npm", "start"]
