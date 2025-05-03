@@ -22,14 +22,13 @@ RUN pip install \
  && rm -rf /wheels
 
 # ──────────── runtime stage ────────────
-FROM cgr.dev/chainguard/python:latest
+FROM cgr.dev/chainguard/python:latest AS runtime
 WORKDIR /app
 
 COPY --from=builder /usr/bin/tini /usr/bin/tini
 COPY --from=builder /build/vendor /app/vendor
 ENV PYTHONPATH=/app/vendor
 
-USER nonroot
 COPY . .
 
 ENTRYPOINT ["/usr/bin/tini", "--"]
