@@ -25,6 +25,11 @@ body {
   font-family: Arial, Helvetica, sans-serif;
 }
 
+/* Headings always dark */
+h1, h2, h3, input, textarea, pre {
+  color: #171717;
+}
+
 html, body {
   height: 100%;
 }
